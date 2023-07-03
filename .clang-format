@@ -1,0 +1,15 @@
+---
+BasedOnStyle: LLVM
+IndentWidth: '4'
+ColumnLimit: 90
+AlignConsecutiveAssignments: 'true'
+AlignConsecutiveDeclarations: 'true'
+AlignOperands: 'true'
+AlignTrailingComments: 'true'
+BreakBeforeBraces: Stroustrup 
+BreakBeforeTernaryOperators: 'true'
+ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
+FixNamespaceComments: 'true'
+PointerAlignment: Right
+TabWidth: '4'
+---
