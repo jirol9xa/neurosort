@@ -9,8 +9,11 @@
 
 int Max_Weight = 0;
 
-void gen_graph(int N, std::vector<std::vector<long long>> &adj_w,
-               std::vector<std::vector<double>> &adj_prob);
+template <typename T> using row = std::vector<T>;
+
+template <typename T> using matrix = std::vector<row<T>>;
+
+void gen_graph(int N, matrix<long long> &adj_w, matrix<double> &adj_prob);
 
 /*  Input:
       N -- size of generated graph.
@@ -32,9 +35,9 @@ int main(int argc, char **argv)
     Max_Weight = N < 1000 ? 1000 : N;
 
     /* Adjacency matrix with weights.  */
-    std::vector<std::vector<long long>> adj_w(N, std::vector<long long>(N, 0));
+    matrix<long long> adj_w(N, row<long long>(N, 0));
     /* Adjacency matrix with probability.  */
-    std::vector<std::vector<double>> adj_prob(N, std::vector<double>(N, 0.));
+    matrix<double> adj_prob(N, row<double>(N, 0.));
 
     gen_graph(N, adj_w, adj_prob);
 
@@ -77,8 +80,7 @@ template <typename Iter> Iter select_randomly(Iter start, Iter end)
       4. Randomly generate weights.
       5. Evaluate the probability for each edge.
 */
-void gen_graph(int N, std::vector<std::vector<long long>> &adj_w,
-               std::vector<std::vector<double>> &adj_prob)
+void gen_graph(int N, matrix<long long> &adj_w, matrix<double> &adj_prob)
 {
     /* 1. Generate the random number of edges.  */
     std::random_device              rd;
