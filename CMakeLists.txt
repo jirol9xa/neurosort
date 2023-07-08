@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.12)
-project(neurosort)
 
+project(elf-parser)
+
+set (INCLUDEDIR include/)
+set (SRCDIR src/)
+
+set(CMAKE_CXX_STANDARD 20)
+
+SET(CMAKE_CXX_FLAGS "-Wall -g -ggdb3")
+
+add_executable(${PROJECT_NAME} ${SRCDIR}/main.cpp ${SRCDIR}/lib.cpp ${SRCDIR}/parser.cpp)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDEDIR})
 
 find_program(CLANG_FORMAT "clang-format")
 if(CLANG_FORMAT)
