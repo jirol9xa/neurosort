@@ -6,7 +6,7 @@ AlignConsecutiveAssignments: 'true'
 AlignConsecutiveDeclarations: 'true'
 AlignOperands: 'true'
 AlignTrailingComments: 'true'
-BreakBeforeBraces: Stroustrup 
+BreakBeforeBraces: Stroustrup
 BreakBeforeTernaryOperators: 'true'
 ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
 FixNamespaceComments: 'true'
