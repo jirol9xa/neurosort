@@ -24,10 +24,15 @@ class BufferQueue {
     /// need to write in file)
     Buff getBuffForRead(Buff old_buff = {})
     {
+        using namespace boost::interprocess;
+        scoped_lock<interprocess_mutex> lock(mutex_);
+
         if (old_buff.mem) {
             ready_for_write_.push(old_buff.buff_number);
             cond_.notify_one();
         }
+        if (ready_for_read_.empty())
+            cond_.wait(lock);
 
         return getBufferImpl(ready_for_read_);
     }
@@ -35,10 +40,15 @@ class BufferQueue {
     /// Returns the buffer, that now is available for writing (Logger will fit it)
     Buff getBuffForWrite(Buff old_buff = {})
     {
+        using namespace boost::interprocess;
+        scoped_lock<interprocess_mutex> lock(mutex_);
+
         if (old_buff.mem) {
             ready_for_read_.push(old_buff.buff_number);
             cond_.notify_one();
         }
+        if (ready_for_write_.empty())
+            cond_.wait(lock);
 
         return getBufferImpl(ready_for_write_);
     }
@@ -64,12 +74,6 @@ class BufferQueue {
 
     Buff getBufferImpl(std::queue<int> &queue)
     {
-        using namespace boost::interprocess;
-        scoped_lock<interprocess_mutex> lock(mutex_);
-
-        if (queue.empty())
-            cond_.wait(lock);
-
         int number_of_buff = queue.front();
         queue.pop();
 
