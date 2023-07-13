@@ -46,11 +46,10 @@ int main()
 {
     using namespace boost::interprocess;
     Shmem_factory &shmem_fact = Shmem_factory::getInstance();
-    
+
     void *addr = shmem_fact.getAddress();
 
     BufferQueue *queue = new (addr) BufferQueue;
-
 
     return 0;
 }

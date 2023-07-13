@@ -1,76 +1,84 @@
 #pragma once
 
-#include <optional>
+#include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
+#include <queue>
 
 struct Buff {
-    void *mem;
-    size_t size;
+    void  *mem  = nullptr;
+    size_t size = 0;
+    int    buff_number;
 };
 
-/// Implementation of class, that will process interprocess communication and 
+/// Implementation of class, that will process interprocess communication and
 /// buffer accessing
 class BufferQueue {
-    public:
-        enum Arch : ssize_t {
-            OVERALL_SIZE = 1024,
-            OVERALL_BUFFS_AMNT = 2,
-            INVALID_VALUE = -1,
-        };
+  public:
+    enum Arch : ssize_t {
+        OVERALL_SIZE       = 1024,
+        OVERALL_BUFFS_AMNT = 2,
+    };
 
-        /// Returns the buffer, that now is available for reading (Logger filled it, 
-        /// need to write in file)
-        std::optional<Buff> getBuffForRead() {
-            using namespace boost::interprocess;
-
-            scoped_lock<interprocess_mutex> lock(mutex_);
-            
-            if (full == INVALID_VALUE)
-                return {};
-
-            Buff buffer = getBuffByNumber(full);
-            getBufferImpl(full, empty);  
-
-            return buffer;
+    /// Returns the buffer, that now is available for reading (Logger filled it,
+    /// need to write in file)
+    Buff getBuffForRead(Buff old_buff = {})
+    {
+        if (old_buff.mem) {
+            ready_for_write_.push(old_buff.buff_number);
+            cond_.notify_one();
         }
 
-        /// Returns the buffer, that now is available for writing (Logger will fit it)
-        std::optional<Buff> getBuffForWrite() {
-            using namespace boost::interprocess;
+        return getBufferImpl(ready_for_read_);
+    }
 
-            scoped_lock<interprocess_mutex> lock(mutex_);
-
-            if (empty == INVALID_VALUE)
-                return {};
-
-            Buff buffer = getBuffByNumber(empty);
-            getBufferImpl(empty, full);
-
-            return buffer;
+    /// Returns the buffer, that now is available for writing (Logger will fit it)
+    Buff getBuffForWrite(Buff old_buff = {})
+    {
+        if (old_buff.mem) {
+            ready_for_read_.push(old_buff.buff_number);
+            cond_.notify_one();
         }
 
-    private:
-        int empty = 0;
-        int full  = -1;
+        return getBufferImpl(ready_for_write_);
+    }
 
-        char buff[Arch::OVERALL_SIZE];
+  private:
+    // Memory, where all buffers take place
+    char buffer_mem[Arch::OVERALL_SIZE];
 
-        // TODO: I guess, that only one mutex is not enouhg, so need to make cond_var
-        boost::interprocess::interprocess_mutex mutex_;
+    // Queues contain numbers of memory buffers, that are ready for write or read
+    std::queue<int> ready_for_write_;
+    std::queue<int> ready_for_read_;
 
-        void getBufferImpl(int &touched_number, int &other_number) {
-            if (other_number == INVALID_VALUE) {
-                // Only for 2 buffs system implementation
-                touched_number = OVERALL_BUFFS_AMNT - 1 - touched_number;
-            }
-            else {
-                touched_number = INVALID_VALUE;
-            }
-        }
+    boost::interprocess::interprocess_mutex     mutex_;
+    boost::interprocess::interprocess_condition cond_;
 
-        // Only for two equals buffer implementation
-        Buff getBuffByNumber(int number) { 
-            return  {buff + OVERALL_SIZE / 2 * number, OVERALL_SIZE / 2}; }
+    enum STATUSES : size_t {
+        NOT_USED,
+        READY_FOR_WRITE,
+        WRITING_IN_PROGRESS,
+        READY_FOR_READ,
+        READING_IN_PROGRESS,
+    };
+
+    Buff getBufferImpl(std::queue<int> &queue)
+    {
+        using namespace boost::interprocess;
+        scoped_lock<interprocess_mutex> lock(mutex_);
+
+        if (queue.empty())
+            cond_.wait(lock);
+
+        int number_of_buff = queue.front();
+        queue.pop();
+
+        return getBuffByNumber(number_of_buff);
+    }
+
+    // Only for two equals buffer implementation
+    Buff getBuffByNumber(int number)
+    {
+        return {buffer_mem + OVERALL_SIZE / 2 * number, OVERALL_SIZE / 2};
+    }
 };
-
