@@ -34,3 +34,5 @@
 # Directories
 build/
 
+# Internal compilation info
+compile_commands.json
