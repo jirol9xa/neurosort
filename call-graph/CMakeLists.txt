@@ -23,5 +23,8 @@ set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}"   -O0 -Wall -Wextra -Wped
 include_directories(include)
 
 set(COLLECTOR lib/Collector.cpp)
+set(LOGGER    lib/Logger.cpp)
+
+add_library(Logger STATIC ${LOGGER})
 
 add_executable(graph-collector ${COLLECTOR})

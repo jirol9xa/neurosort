@@ -1,6 +1,8 @@
 #pragma once
 
 #include "BufferQueue.hpp"
+#include "TypeAliases.hpp"
+#include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/exceptions.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <functional>
@@ -8,9 +10,6 @@
 #include <string_view>
 
 namespace ShmFactory {
-using ManagedMemPtr =
-    std::unique_ptr<boost::interprocess::managed_shared_memory, std::function<void()>>;
-
 /// Struct, that contain all info about managed_shared_memory and can return the pointer
 /// to it.
 struct Shmem_factory {
@@ -23,7 +22,7 @@ struct Shmem_factory {
         BufferQueue::OVERALL_BUFFS_AMNT * (sizeof(void *) + sizeof(int));
 
     /// Opens or creates managed_shared_memory. !!! Can throw an exception !!!
-    static ManagedMemPtr getManagedMemPtr()
+    static TypeAliases::ManagedMemPtr getManagedMemPtr()
     {
         using namespace boost::interprocess;
         shared_memory_object::remove(shm_name);
@@ -31,7 +30,9 @@ struct Shmem_factory {
         try {
             try {
                 return {new managed_shared_memory(open_or_create, shm_name, size_),
-                        []() { remove(shm_name); }};
+                        [](boost::interprocess::managed_shared_memory *) {
+                            remove(shm_name);
+                        }};
             }
             catch (interprocess_exception &ex) {
                 std::cout << ex.what();

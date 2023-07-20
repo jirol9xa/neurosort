@@ -1,5 +1,6 @@
 #include "BufferQueue.hpp"
 #include "ShmFactory.hpp"
+#include "TypeAliases.hpp"
 #include <fstream>
 #include <iostream>
 #include <sys/wait.h>
@@ -15,12 +16,11 @@ int main(int argc, char *const argv[])
 
     using namespace boost::interprocess;
     using namespace ShmFactory;
-    auto shm = Shmem_factory::getManagedMemPtr();
+    auto                       shm = Shmem_factory::getManagedMemPtr();
+    TypeAliases::VoidAllocator alloc(shm->get_segment_manager());
 
-    // managed_shared_memory shmem;
-
-    // BufferQueue *queue = sh_mem.;
-    Buff buff;
+    BufferQueue *queue = shm->construct<BufferQueue>("BufferQueue")(alloc);
+    Buff         buff;
 
     std::thread exec_patch([argv = argv]() {
         if (execvp(*(argv + 1), argv + 1) == -1)

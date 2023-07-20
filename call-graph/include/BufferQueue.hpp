@@ -1,5 +1,6 @@
 #pragma once
 
+#include "TypeAliases.hpp"
 #include <boost/interprocess/containers/deque.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
@@ -35,7 +36,8 @@ class BufferQueue {
         OVERALL_BUFFS_AMNT = 2,
     };
 
-    BufferQueue()
+    BufferQueue(const TypeAliases::VoidAllocator &alloc)
+        : ready_for_write_(alloc), ready_for_read_(alloc)
     {
         for (size_t i = 0; i < OVERALL_BUFFS_AMNT; ++i)
             ready_for_write_.push_back(i);
@@ -131,12 +133,16 @@ class BufferQueue {
     }
 
   private:
+    template <typename T>
+    using MetaAllocator = boost::interprocess::allocator<T, TypeAliases::SegmentManager>;
+    using ReadBuffType  = std::pair<int, void *>;
+
     // Memory, where all buffers take place
     char buffer_mem[Arch::OVERALL_SIZE];
 
     // Queues contain numbers of memory buffers, that are ready for write or read
-    boost::interprocess::deque<int>                    ready_for_write_;
-    boost::interprocess::deque<std::pair<int, void *>> ready_for_read_;
+    boost::interprocess::deque<int, MetaAllocator<int>> ready_for_write_;
+    boost::interprocess::deque<ReadBuffType, MetaAllocator<ReadBuffType>> ready_for_read_;
 
     mutable boost::interprocess::interprocess_mutex     mutex_;
     mutable boost::interprocess::interprocess_condition cond_;
