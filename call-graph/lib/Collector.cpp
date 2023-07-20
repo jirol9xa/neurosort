@@ -14,12 +14,13 @@ int main(int argc, char *const argv[])
     }
 
     using namespace boost::interprocess;
-    Shmem_factory &shmem_fact = Shmem_factory::getInstance();
+    using namespace ShmFactory;
+    auto shm = Shmem_factory::getManagedMemPtr();
 
-    void *addr = shmem_fact.getAddress();
+    // managed_shared_memory shmem;
 
-    BufferQueue *queue = new (addr) BufferQueue;
-    Buff         buff;
+    // BufferQueue *queue = sh_mem.;
+    Buff buff;
 
     std::thread exec_patch([argv = argv]() {
         if (execvp(*(argv + 1), argv + 1) == -1)

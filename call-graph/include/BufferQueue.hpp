@@ -1,22 +1,24 @@
 #pragma once
 
+#include <boost/interprocess/containers/deque.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
-#include <boost/interprocess/containers/deque.hpp>
 #include <queue>
 #include <utility>
 
 #define PRINT_LINE fprintf(stderr, "[%s:%d: pid = %d]\n", __func__, __LINE__, getpid())
 
-// TODO: If app will have a lot of threads we should replace bool isLoggerFinished with smth idk
+// TODO: If app will have a lot of threads we should replace bool isLoggerFinished with
+// smth idk
 
 struct Buff {
-    void  *mem_begin  = nullptr;
-    void  *mem_end = nullptr;
-    int    buff_number;
+    void *mem_begin = nullptr;
+    void *mem_end   = nullptr;
+    int   buff_number;
 
-    bool can_fit(size_t msg_size) {
+    bool can_fit(size_t msg_size)
+    {
         if (!mem_begin || !mem_end)
             return false;
 
@@ -65,7 +67,7 @@ class BufferQueue {
         auto [buff_number, buff_end] = ready_for_read_.front();
         ready_for_read_.pop_front();
 
-        Buff mem_buff_by_number = getBuffByNumber(buff_number);
+        Buff mem_buff_by_number    = getBuffByNumber(buff_number);
         mem_buff_by_number.mem_end = buff_end;
 
         return mem_buff_by_number;
@@ -116,7 +118,8 @@ class BufferQueue {
         cond_.notify_all();
     }
 
-    bool isLoggerFinished() const {
+    bool isLoggerFinished() const
+    {
         PRINT_LINE;
 
         using namespace boost::interprocess;
@@ -132,19 +135,19 @@ class BufferQueue {
     char buffer_mem[Arch::OVERALL_SIZE];
 
     // Queues contain numbers of memory buffers, that are ready for write or read
-    boost::interprocess::deque<int> ready_for_write_;
+    boost::interprocess::deque<int>                    ready_for_write_;
     boost::interprocess::deque<std::pair<int, void *>> ready_for_read_;
 
     mutable boost::interprocess::interprocess_mutex     mutex_;
     mutable boost::interprocess::interprocess_condition cond_;
-    bool is_logger_finished_ = false;
+    bool                                                is_logger_finished_ = false;
 
     Buff getBuffByNumber(int number)
     {
         PRINT_LINE;
 
         constexpr size_t chunk_size = OVERALL_SIZE / OVERALL_BUFFS_AMNT;
-        return {buffer_mem +  chunk_size * number,
-                buffer_mem + chunk_size * (number + 1), number};
+        return {buffer_mem + chunk_size * number, buffer_mem + chunk_size * (number + 1),
+                number};
     }
 };
