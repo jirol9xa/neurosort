@@ -16,10 +16,13 @@ int main(int argc, char *const argv[])
 
     using namespace boost::interprocess;
     using namespace ShmFactory;
+
+    MemCleaner mem_cl;
+
     auto                       shm = Shmem_factory::getManagedMemPtr();
     TypeAliases::VoidAllocator alloc(shm->get_segment_manager());
 
-    BufferQueue *queue = shm->construct<BufferQueue>("BufferQueue")(alloc);
+    BufferQueue *queue = shm->construct<BufferQueue>(unique_instance)(alloc);
     Buff         buff;
 
     std::thread exec_patch([argv = argv]() {
@@ -32,6 +35,8 @@ int main(int argc, char *const argv[])
         long msg_size =
             static_cast<char *>(buff.mem_end) - static_cast<char *>(buff.mem_begin);
         file.write(static_cast<char *>(buff.mem_begin), msg_size);
+
+        printf("Print to file done\n\n");
     }
 
     file.close();

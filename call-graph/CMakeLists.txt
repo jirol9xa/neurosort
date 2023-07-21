@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
+set(CMAKE_CXX_COMPILER clang++)
+set(CMAKE_C_COMPILER clang)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
@@ -25,6 +28,6 @@ include_directories(include)
 set(COLLECTOR lib/Collector.cpp)
 set(LOGGER    lib/Logger.cpp)
 
-add_library(Logger STATIC ${LOGGER})
+#add_library(Logger STATIC ${LOGGER})
 
 add_executable(graph-collector ${COLLECTOR})

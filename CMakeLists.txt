@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(neurosort)
 
+add_subdirectory(call-graph)
 
 find_program(CLANG_FORMAT "clang-format")
 if(CLANG_FORMAT)

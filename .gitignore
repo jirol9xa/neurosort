@@ -37,7 +37,3 @@ build/
 # Internal compilation info
 compile_commands.json
 
-# CallGraph branch specific
-build_patched.sh
-CallGraph.cpp
-Logger.cpp

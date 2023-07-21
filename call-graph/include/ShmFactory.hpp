@@ -17,9 +17,11 @@ struct Shmem_factory {
     size_t                       getSize() const { return size_; }
     std::string_view             getMemName() const { return shm_name; }
 
+    // 4K is a minimum size shared object
     static constexpr size_t size_ =
-        sizeof(BufferQueue) +
-        BufferQueue::OVERALL_BUFFS_AMNT * (sizeof(void *) + sizeof(int));
+        std::max(sizeof(BufferQueue) +
+                     BufferQueue::OVERALL_BUFFS_AMNT * (sizeof(void *) + sizeof(int)),
+                 4096ul);
 
     /// Opens or creates managed_shared_memory. !!! Can throw an exception !!!
     static TypeAliases::ManagedMemPtr getManagedMemPtr()
@@ -29,10 +31,8 @@ struct Shmem_factory {
 
         try {
             try {
-                return {new managed_shared_memory(open_or_create, shm_name, size_),
-                        [](boost::interprocess::managed_shared_memory *) {
-                            remove(shm_name);
-                        }};
+                return TypeAliases::ManagedMemPtr{
+                    new managed_shared_memory(open_or_create, shm_name, size_)};
             }
             catch (interprocess_exception &ex) {
                 std::cout << ex.what();
@@ -45,4 +45,18 @@ struct Shmem_factory {
         }
     }
 };
+
+/// Structure for removing shared_memory from file system, create  it only in main proc
+/// and only once
+struct MemCleaner {
+    MemCleaner()
+    {
+        boost::interprocess::shared_memory_object::remove(Shmem_factory::shm_name);
+    }
+    ~MemCleaner()
+    {
+        boost::interprocess::shared_memory_object::remove(Shmem_factory::shm_name);
+    }
+};
+
 } // namespace ShmFactory
