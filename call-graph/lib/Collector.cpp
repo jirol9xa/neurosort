@@ -36,8 +36,10 @@ int main(int argc, char *const argv[])
             static_cast<char *>(buff.mem_end) - static_cast<char *>(buff.mem_begin);
         file.write(static_cast<char *>(buff.mem_begin), msg_size);
 
-        printf("Print to file done\n\n");
+        PRINT_LINE;
     }
+
+    PRINT_LINE;
 
     file.close();
 
@@ -45,6 +47,8 @@ int main(int argc, char *const argv[])
 
     // Here we need call parser+elf-parser for formatting "OutFile.txt" into the proper
     // way
+
+    PRINT_LINE;
 
     return 0;
 }

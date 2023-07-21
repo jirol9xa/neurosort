@@ -27,7 +27,6 @@ struct Shmem_factory {
     static TypeAliases::ManagedMemPtr getManagedMemPtr()
     {
         using namespace boost::interprocess;
-        shared_memory_object::remove(shm_name);
 
         try {
             try {

@@ -57,11 +57,11 @@ class BufferQueue {
 
         if (old_buff.mem_begin) {
             ready_for_write_.push_back(old_buff.buff_number);
-            cond_.notify_all();
+            cond_full_.notify_one();
         }
         if (ready_for_read_.empty()) {
             PRINT_LINE;
-            cond_.wait(lock);
+            cond_empty_.wait(lock);
         }
 
         PRINT_LINE;
@@ -86,11 +86,14 @@ class BufferQueue {
         PRINT_LINE;
 
         if (old_buff.mem_begin) {
+            PRINT_LINE;
             ready_for_read_.push_back({old_buff.buff_number, old_buff.mem_begin});
-            cond_.notify_all();
+            cond_empty_.notify_one();
         }
-        if (ready_for_write_.empty())
-            cond_.wait(lock);
+        if (ready_for_write_.empty()) {
+            PRINT_LINE;
+            cond_full_.wait(lock);
+        }
 
         PRINT_LINE;
 
@@ -117,7 +120,7 @@ class BufferQueue {
         is_logger_finished_ = true;
 
         ready_for_read_.push_back({old_buff.buff_number, old_buff.mem_begin});
-        cond_.notify_all();
+        cond_empty_.notify_one();
     }
 
     bool isLoggerFinished() const
@@ -145,7 +148,10 @@ class BufferQueue {
     boost::interprocess::deque<ReadBuffType, MetaAllocator<ReadBuffType>> ready_for_read_;
 
     mutable boost::interprocess::interprocess_mutex     mutex_;
-    mutable boost::interprocess::interprocess_condition cond_;
+    // cond_full_ notifies if there is at least one buffer for logger (empty)
+    mutable boost::interprocess::interprocess_condition cond_full_;
+    // cond_empty_ notifies if there is at least one buffer for collector filled by logger
+    mutable boost::interprocess::interprocess_condition cond_empty_;
     bool                                                is_logger_finished_ = false;
 
     Buff getBuffByNumber(int number)
