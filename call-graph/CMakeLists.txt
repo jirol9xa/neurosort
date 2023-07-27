@@ -18,10 +18,8 @@ if (${FORCE_COLORED_OUTPUT})
 endif()
 # Paste end
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}" -O3 -mavx2)
-set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}"   -O0 -Wall -Wextra -Wpedantic 
-                            -fno-omit-frame-pointer -g -fsanitize=address,leak,undefined
-                            -fsanitize-address-use-after-scope)
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -mavx2 -lpthread -pthread")
+set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -O0 -Wall -Wextra -Wpedantic -fno-omit-frame-pointer -g -fsanitize=address,leak,undefined -fsanitize-address-use-after-scope -lpthread -pthread")
 
 include_directories(include)
 

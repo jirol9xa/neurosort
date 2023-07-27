@@ -18,7 +18,7 @@ class GraphEditor {
 
         // Here we make file with maps for elf-parser file
         auto  pid         = getpid();
-        char *system_text = (char *)calloc(32, sizeof(char));
+        char *system_text = (char *)calloc(64, sizeof(char));
         if (!system_text)
             return;
 
@@ -55,12 +55,10 @@ class GraphEditor {
 
 void GraphEditor::addCall(int64_t Caller, int64_t Callee)
 {
-    PRINT_LINE;
-
     if (!Buffer.can_fit(MsgLenght))
         Buffer = Queue->getBuffForWrite(Buffer);
 
-    sprintf(static_cast<char *>(Buffer.mem_begin), "%lx %lx\n", Caller, Callee);
+    Buffer.size += sprintf(Buffer.begin + Buffer.size, "%lx %lx\n", Caller, Callee);
 }
 
 // We will use linkonceodr, so we must say compiler not to inline the call

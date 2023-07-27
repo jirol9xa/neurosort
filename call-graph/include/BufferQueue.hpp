@@ -14,16 +14,17 @@
 // smth idk
 
 struct Buff {
-    void *mem_begin = nullptr;
-    void *mem_end   = nullptr;
-    int   buff_number;
+    char *begin       = nullptr;
+    char *end         = nullptr;
+    int   buff_number = 0;
+    int   size        = 0;
 
     bool can_fit(size_t msg_size)
     {
-        if (!mem_begin || !mem_end)
+        if (!begin || !end)
             return false;
 
-        return static_cast<char *>(mem_end) - static_cast<char *>(mem_begin) > msg_size;
+        return end - begin > msg_size;
     }
 };
 
@@ -55,7 +56,7 @@ class BufferQueue {
         PRINT_LINE;
         fprintf(stderr, "ready_for_write.empty() = %d\n", ready_for_write_.empty());
 
-        if (old_buff.mem_begin) {
+        if (old_buff.begin) {
             ready_for_write_.push_back(old_buff.buff_number);
             cond_full_.notify_one();
         }
@@ -66,11 +67,13 @@ class BufferQueue {
 
         PRINT_LINE;
 
-        auto [buff_number, buff_end] = ready_for_read_.front();
+        auto [buff_number, buff_size] = ready_for_read_.front();
         ready_for_read_.pop_front();
 
-        Buff mem_buff_by_number    = getBuffByNumber(buff_number);
-        mem_buff_by_number.mem_end = buff_end;
+        Buff mem_buff_by_number = getBuffByNumber(buff_number);
+        mem_buff_by_number.size = buff_size;
+
+        assert(buff_size > 0);
 
         return mem_buff_by_number;
     }
@@ -85,9 +88,13 @@ class BufferQueue {
 
         PRINT_LINE;
 
-        if (old_buff.mem_begin) {
+        if (old_buff.begin) {
             PRINT_LINE;
-            ready_for_read_.push_back({old_buff.buff_number, old_buff.mem_begin});
+
+            printf("beginByNumber = %p, actualBegin = %p\n",
+                   getBuffByNumber(old_buff.buff_number).begin, old_buff.begin);
+
+            ready_for_read_.push_back({old_buff.buff_number, old_buff.size});
             cond_empty_.notify_one();
         }
         if (ready_for_write_.empty()) {
@@ -119,8 +126,10 @@ class BufferQueue {
 
         is_logger_finished_ = true;
 
-        ready_for_read_.push_back({old_buff.buff_number, old_buff.mem_begin});
+        ready_for_read_.push_back({old_buff.buff_number, old_buff.size});
         cond_empty_.notify_one();
+
+        lock.unlock();
     }
 
     bool isLoggerFinished() const
@@ -138,7 +147,7 @@ class BufferQueue {
   private:
     template <typename T>
     using MetaAllocator = boost::interprocess::allocator<T, TypeAliases::SegmentManager>;
-    using ReadBuffType  = std::pair<int, void *>;
+    using ReadBuffType  = std::pair<int, long>;
 
     // Memory, where all buffers take place
     char buffer_mem[Arch::OVERALL_SIZE];
@@ -147,7 +156,7 @@ class BufferQueue {
     boost::interprocess::deque<int, MetaAllocator<int>> ready_for_write_;
     boost::interprocess::deque<ReadBuffType, MetaAllocator<ReadBuffType>> ready_for_read_;
 
-    mutable boost::interprocess::interprocess_mutex     mutex_;
+    mutable boost::interprocess::interprocess_mutex mutex_;
     // cond_full_ notifies if there is at least one buffer for logger (empty)
     mutable boost::interprocess::interprocess_condition cond_full_;
     // cond_empty_ notifies if there is at least one buffer for collector filled by logger
@@ -157,6 +166,7 @@ class BufferQueue {
     Buff getBuffByNumber(int number)
     {
         PRINT_LINE;
+        fprintf(stderr, "Number = %d\n", number);
 
         constexpr size_t chunk_size = OVERALL_SIZE / OVERALL_BUFFS_AMNT;
         return {buffer_mem + chunk_size * number, buffer_mem + chunk_size * (number + 1),
