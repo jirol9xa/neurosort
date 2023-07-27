@@ -50,12 +50,12 @@ class GraphEditor {
         return Object;
     }
 
-    void addCall(int64_t Caller, int64_t Callee);
+    void addCall(uint64_t Caller, uint64_t Callee);
 };
 
-void GraphEditor::addCall(int64_t Caller, int64_t Callee)
+void GraphEditor::addCall(uint64_t Caller, uint64_t Callee)
 {
-    if (!Buffer.can_fit(MsgLenght))
+    if (!Buffer.can_fit(MsgLenght)) // FIXME
         Buffer = Queue->getBuffForWrite(Buffer);
 
     Buffer.size += sprintf(Buffer.begin + Buffer.size, "%lx %lx\n", Caller, Callee);
@@ -68,6 +68,6 @@ void Logger() __attribute__((noinline));
 void Logger()
 {
     GraphEditor &graph = GraphEditor::getInstance();
-    graph.addCall(reinterpret_cast<int64_t>(__builtin_return_address(1)),
-                  reinterpret_cast<int64_t>(__builtin_return_address(0)));
+    graph.addCall(reinterpret_cast<uint64_t>(__builtin_return_address(1)),
+                  reinterpret_cast<uint64_t>(__builtin_return_address(0)));
 }

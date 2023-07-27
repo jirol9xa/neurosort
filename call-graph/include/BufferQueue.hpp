@@ -8,8 +8,6 @@
 #include <queue>
 #include <utility>
 
-#define PRINT_LINE fprintf(stderr, "[%s:%d: pid = %d]\n", __func__, __LINE__, getpid())
-
 // TODO: If app will have a lot of threads we should replace bool isLoggerFinished with
 // smth idk
 
@@ -24,7 +22,7 @@ struct Buff {
         if (!begin || !end)
             return false;
 
-        return end - begin > msg_size;
+        return end - begin - size > msg_size;
     }
 };
 
@@ -48,24 +46,15 @@ class BufferQueue {
     /// need to write in file)
     Buff getBuffForRead(Buff old_buff = {})
     {
-        PRINT_LINE;
-
         using namespace boost::interprocess;
         scoped_lock<interprocess_mutex> lock(mutex_);
-
-        PRINT_LINE;
-        fprintf(stderr, "ready_for_write.empty() = %d\n", ready_for_write_.empty());
 
         if (old_buff.begin) {
             ready_for_write_.push_back(old_buff.buff_number);
             cond_full_.notify_one();
         }
-        if (ready_for_read_.empty()) {
-            PRINT_LINE;
+        if (ready_for_read_.empty())
             cond_empty_.wait(lock);
-        }
-
-        PRINT_LINE;
 
         auto [buff_number, buff_size] = ready_for_read_.front();
         ready_for_read_.pop_front();
@@ -81,48 +70,26 @@ class BufferQueue {
     /// Returns the buffer, that now is available for writing (Logger will fit it)
     Buff getBuffForWrite(Buff old_buff = {})
     {
-        PRINT_LINE;
-
         using namespace boost::interprocess;
         scoped_lock<interprocess_mutex> lock(mutex_);
 
-        PRINT_LINE;
-
         if (old_buff.begin) {
-            PRINT_LINE;
-
-            printf("beginByNumber = %p, actualBegin = %p\n",
-                   getBuffByNumber(old_buff.buff_number).begin, old_buff.begin);
-
             ready_for_read_.push_back({old_buff.buff_number, old_buff.size});
             cond_empty_.notify_one();
         }
-        if (ready_for_write_.empty()) {
-            PRINT_LINE;
+        if (ready_for_write_.empty())
             cond_full_.wait(lock);
-        }
-
-        PRINT_LINE;
 
         int number_of_buff = ready_for_write_.front();
-
-        PRINT_LINE;
-
         ready_for_write_.pop_front();
-
-        PRINT_LINE;
 
         return getBuffByNumber(number_of_buff);
     }
 
     void endWriting(Buff old_buff)
     {
-        PRINT_LINE;
-
         using namespace boost::interprocess;
         scoped_lock<interprocess_mutex> lock(mutex_);
-
-        PRINT_LINE;
 
         is_logger_finished_ = true;
 
@@ -134,12 +101,8 @@ class BufferQueue {
 
     bool isLoggerFinished() const
     {
-        PRINT_LINE;
-
         using namespace boost::interprocess;
         scoped_lock<interprocess_mutex> lock(mutex_);
-
-        PRINT_LINE;
 
         return is_logger_finished_;
     }
@@ -165,9 +128,6 @@ class BufferQueue {
 
     Buff getBuffByNumber(int number)
     {
-        PRINT_LINE;
-        fprintf(stderr, "Number = %d\n", number);
-
         constexpr size_t chunk_size = OVERALL_SIZE / OVERALL_BUFFS_AMNT;
         return {buffer_mem + chunk_size * number, buffer_mem + chunk_size * (number + 1),
                 number};
