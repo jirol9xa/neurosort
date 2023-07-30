@@ -5,29 +5,53 @@
 #include "lib.hpp"
 
 struct Elf64_Sym_W_Name {
-    Elf64_Sym *symbol;
-    char *symName;
+  Elf64_Sym *symbol;
+  char *symName;
 };
 
 struct Elf64_Sym_Arr {
-    Elf64_Sym_W_Name *symbols;
-    size_t size;
+  Elf64_Sym_W_Name *symbols;
+  size_t size;
 };
 
-uint8_t *createBuffer (const char *inputFileName, size_t *numberOfStrings = nullptr);
+class Parser {
+  Elf64_Sym_Arr *symArr;
+  char **strArray;
+  uint8_t *binary;
+  char *addrs;
+  size_t numOfLinesInAddrs = 0;
 
-void fillHashMap (std::map <std::pair<uint64_t, u_int64_t>, int> &funcHashTable, char **strArray, size_t numberOfStrings, Elf64_Sym_Arr *symArray);
+  std::vector<std::array<uint64_t, 3>> Ranges;
 
-Elf64_Sym_Arr *getSymbols (Elf64_Ehdr *elfHeader);
+  bool pic;
 
-int symbolComp (const void *symbol1, const void *symbol2);
+public:
+  Parser(const char *elfFileName, const char *addrsFile, const char *mapsFile);
+  ~Parser();
+  Elf64_Sym_W_Name *findSymbolByAddress(size_t address);
+  Elf64_Sym_Arr *getSymArr();
+  char **getStrArray();
+  bool isPIC();
+  size_t getNumOfLines();
+  std::optional<std::array<uint64_t, 3>>
+  findLowerBoundRange(uint64_t Addr) const;
 
-void printSymbolsValues (Elf64_Sym_Arr *symArr);
+  void dumpRanges();
 
-Elf64_Sym_W_Name *findSymbolByAddress (Elf64_Sym_Arr *symArr, size_t address);
+  uint64_t truncSymbolAdress(uint64_t addr);
 
-void dumpMapToFile (std::map <std::pair<u_int64_t, u_int64_t>, int> &funcHashTable, Elf64_Sym_Arr *symArr);
+private:
+  uint8_t *createBuffer(const char *inputFileName, bool areLinesNeeded = false);
+  Elf64_Sym_Arr *getSymbols(Elf64_Ehdr *elfHeader);
+  void parseMapsFile(const char *mapsFile);
+};
 
-void dumpFuncSizes (Elf64_Sym_Arr *symArr);
+void fillHashMap(std::map<std::pair<uint64_t, u_int64_t>, int> &funcHashTable,
+                 Parser *psr);
 
-void deleteSymArr (Elf64_Sym_Arr *symArr);
+int symbolComp(const void *symbol1, const void *symbol2);
+
+void printSymbolsValues(Elf64_Sym_Arr *symArr);
+
+void dumpMapToFile(
+    std::map<std::pair<u_int64_t, u_int64_t>, int> &funcHashTable, Parser *psr);

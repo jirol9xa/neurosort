@@ -1,27 +1,22 @@
-#include <iostream>
 #include "parser.hpp"
+#include <iostream>
 
-int main (int argc, char *argv[]) {
-    if (argc < 2) {
-        std::cout << "Error: missing file name!\n";
-        return -1;
-    }
+int main(int argc, char *argv[]) {
+  if (argc < 3) {
+    std::cout << "Error: missing file name!\n";
+    return -1;
+  }
 
-    uint8_t *binary = createBuffer (argv[1]);
-    if (!binary) {
-        return -1;
-    }
+  Parser psr(argv[1], argv[2], argv[3]);
 
-    Elf64_Ehdr *elfHeader = (Elf64_Ehdr *)binary;
-    Elf64_Sym_Arr *symbolArr = getSymbols(elfHeader);
-    if (!symbolArr) {
-        return -1;
-    }
+  qsort((void *)psr.getSymArr()->symbols, psr.getSymArr()->size,
+        sizeof(Elf64_Sym_W_Name), symbolComp);
 
-    dumpFuncSizes (symbolArr);
+  std::map<std::pair<uint64_t, uint64_t>, int> funcHashTable;
 
-    deleteSymArr (symbolArr);
-    free (binary);
+  fillHashMap(funcHashTable, &psr);
 
-    return 0;
+  dumpMapToFile(funcHashTable, &psr);
+
+  return 0;
 }
